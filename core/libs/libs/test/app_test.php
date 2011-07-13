@@ -55,6 +55,11 @@
 			'fixtures' => array(
 				'ignore' => array(),
 				'do' => array()
+			),
+			'schema' => array(
+				'collate' => 'utf8_general_ci',
+				'charset' => 'utf8',
+				'engine' => 'InnoDB'
 			)
 		);
 

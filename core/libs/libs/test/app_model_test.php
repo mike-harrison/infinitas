@@ -126,13 +126,15 @@
 		 * @return void
 		 */
 		public function startTest($method) {
-			$this->AppTest->startTest($method);
-			$this->AppTest->loadFixtures(null, true);
+			if(is_subclass_of($this, 'AppModelTestCase')) {
+				$this->AppTest->startTest($method);
+				$this->AppTest->loadFixtures(null, true);
 
-			echo '<div style="border: 2px solid #d6ab00; padding: 5px; margin-top:5px; margin-bottom:5px">';
-			
-			list($plugin, $model) = pluginSplit($this->setup[$this->setup['type']]);
-			$this->{$model} = ClassRegistry::init($this->setup[$this->setup['type']]);
+				echo '<div style="border: 2px solid #d6ab00; padding: 5px; margin-top:5px; margin-bottom:5px">';
+
+				list($plugin, $model) = pluginSplit($this->setup[$this->setup['type']]);
+				$this->{$model} = ClassRegistry::init($this->setup[$this->setup['type']]);
+			}
 		}
 
 		/**
@@ -145,23 +147,25 @@
 		 * @return void
 		 */
 		public function endTest($method) {
-			list($plugin, $model) = pluginSplit($this->setup[$this->setup['type']]);
-			unset($this->{$model});
-			ClassRegistry::flush();
+			if(is_subclass_of($this, 'AppModelTestCase')) {
+				list($plugin, $model) = pluginSplit($this->setup[$this->setup['type']]);
+				unset($this->{$model});
+				ClassRegistry::flush();
 
-			$this->AppTest->endTest($method);
-			echo sprintf(
-				'<div style="padding: 8px; background-color: green; color: white;">%s <span style="color:#ffdd00;">[%ss]</span></div>',
-				$this->AppTest->prettyTestMethod($method),
-				$this->data[$method]['total']
-			);
+				$this->AppTest->endTest($method);
+				echo sprintf(
+					'<div style="padding: 8px; background-color: green; color: white;">%s <span style="color:#ffdd00;">[%ss]</span></div>',
+					$this->AppTest->prettyTestMethod($method),
+					$this->data[$method]['total']
+				);
 
-			echo '</div>';
-			if($this->stop === true){
-				debug('Skipping further tests', false, false);
+				echo '</div>';
+				if($this->stop === true){
+					debug('Skipping further tests', false, false);
 
-				$this->AppTest->endTest();
-				exit;
+					$this->AppTest->endTest();
+					exit;
+				}
 			}
 		}
 
@@ -198,6 +202,168 @@
 			list($plugin, $model) = pluginSplit($this->setup[$this->setup['type']]);
 			$this->assertTrue(isset($this->{$model}));
 			$this->assertTrue($this->{$model}->deleteAll(array($this->{$model}->alias . '.' . $this->{$model}->primaryKey . ' != ' => 'will-never-be-this-that-is-for-sure')));
+		}
+
+		public function testModelSchema(){
+			foreach($this->_fixtureClassMap as $model => $fixture){
+				$this->assertFixtureSchemaLiveSchema(array('model' => $model, 'fixture' => $fixture));
+			}
+		}
+
+		public function assertFixtureSchemaLiveSchema($data){
+			$fixture = array(
+				'fields' => $this->_fixtures[$data['fixture']]->fields,
+				'indexes' => $this->_fixtures[$data['fixture']]->fields['indexes'],
+				'params' => $this->_fixtures[$data['fixture']]->fields['tableParameters']
+			);
+			unset($fixture['fields']['indexes'], $fixture['fields']['tableParameters']);
+
+			$this->assertSchemaParams($data['model'], $fixture['params']);
+			$this->assertSchemaFields($data['model'], $fixture['fields']);
+			$this->assertFixtureMatchesLive($data['fixture'], $fixture);
+		}
+
+		/**
+		 * @brief assert the fixture is the correct type
+		 *
+		 * Make sure that the engine and other details are correct.
+		 *
+		 * @param array $params the details of the fixture
+		 */
+		public function assertSchemaParams($model, $params){
+			$params = array_merge(array('collate' => null, 'charset' => null, 'engine' => null), $params);
+			$this->assertEqual($this->setup['schema']['collate'], $params['collate'], sprintf('Database collate "%s" for model "%s" does not match "%s"', $this->setup['schema']['collate'], $model, $params['collate']));
+			$this->assertEqual($this->setup['schema']['charset'], $params['charset'], sprintf('Database charset "%s" for model "%s" does not match "%s"', $this->setup['schema']['charset'], $model, $params['charset']));
+			$this->assertEqual($this->setup['schema']['engine'], $params['engine'], sprintf('Database engine "%s" for model "%s" does not match "%s"', $this->setup['schema']['engine'], $model, $params['engine']));
+		}
+
+		/**
+		 * @brief assert indervidual fields are correct
+		 *
+		 * make sure that all the fields have the correct schema
+		 * 
+		 * @access public
+		 *
+		 * @param string $model the model the fields belong to
+		 * @param array $fields all the fields for this model
+		 *
+		 * @return void
+		 */
+		public function assertSchemaFields($model, $fields){
+			foreach($fields as $field => $data){
+				$data = array_merge(array('collate' => null, 'charset' => null, 'engine' => null), $data);
+				
+				$yearField = ($data['type'] == 'string') && empty($data['collate']) && ($data['length'] === 4);
+				$integer = !$this->assertIsUuid($model, $field, $data) && $data['type'] == 'integer';
+
+				if($data['type'] == 'datetime'){
+					if($field == 'created' || $field == 'modified'){
+						$this->assertTrue($data['null'], sprintf('Field "%s" in "%s" should allow being null', $field, $model));
+						$this->assertFalse($data['default'], sprintf('Field "%s" in "%s" should have an empty default value', $field, $model));
+					}
+					
+					continue;
+				}
+				
+				if($yearField || $integer){
+					continue;
+				}
+
+				$this->assertEqual($this->setup['schema']['collate'], $data['collate'], sprintf('Field collate "%s" in "%s" for field "%s" does not match"%s"', $this->setup['schema']['collate'], $model, $field, $data['collate']));
+				$this->assertEqual($this->setup['schema']['charset'], $data['charset'], sprintf('Field charset "%s" in "%s" for field "%s" does not match "%s"', $this->setup['schema']['charset'], $model, $field, $data['charset']));
+			}
+		}
+
+		/**
+		 * @brief test to make sure that nay pk / fk fields are uuid
+		 *
+		 *
+		 * $fields array is something like the following
+		 * Array (
+		 *	[type] => string/integer/datetime etc
+		 *	[null] => // or 1
+		 *	[default] =>  // or 'some string'
+		 *	[length] => 36
+		 *	[key] => primary // or nothing?
+		 *	[collate] => utf8_general_ci
+		 *	[charset] => utf8
+		 * )
+		 * 
+		 * @access public
+		 *
+		 * @param string $model the model the field belongs to
+		 * @param string $field the field being tested
+		 * @param array $data the fields config
+		 *
+		 * @return true if it should be, false if not.
+		 */
+		public function assertIsUuid($model, $field, $data){
+			if(strstr($field, '_id') || $field == 'id'){
+				$uuid = ($data['type'] == 'string') && ($data['length'] === 36);
+				$this->assertTrue($uuid, sprintf('Field "%s" in "%s" is "%s" but should be UUID', $field, $model, $data['type']));
+				return true;
+			}
+
+			return false;
+		}
+
+		/**
+		 * @brief assert the fixture is the same as the dev db
+		 *
+		 * Make sure that your test fixtures match your dev setup, especially good
+		 * when working with others to keep everything upto date.
+		 * 
+		 * @param array $fixture
+		 */
+		public function assertFixtureMatchesLive($fixtureName, $fixture){
+			$model = Inflector::classify(str_replace('plugin.', '', $fixtureName));
+			$config = $this->db->configKeyName;
+			
+			ClassRegistry::config(array('ds' => 'default'));
+
+			ClassRegistry::flush();
+			$Model = ClassRegistry::init($model);
+			$this->assertEqual($Model->useDbConfig, 'default');
+			$schema = $Model->schema();
+
+			ClassRegistry::flush();
+			ClassRegistry::config(array('ds' => $config));
+			$this->assertEqual(ClassRegistry::init($model)->useDbConfig, $config);
+
+			foreach($fixture['fields'] as $fixtureField => $fixtureData){
+				$yearField = ($fixtureData['type'] == 'string') && ($fixtureData['length'] == 4);
+
+				$this->assertTrue(isset($schema[$fixtureField]), sprintf('Model "%s" is missing field "%s"', $model, $fixtureField));
+				$this->assertEqual($fixtureData['type'], $schema[$fixtureField]['type'], sprintf('Field "%s" type "%s" in model "%s" does not match "%s"', $fixtureData['type'], $fixtureField, $model, $schema[$fixtureField]['type']));
+
+				if($yearField){
+					unset($schema[$fixtureField]);
+					continue;
+				}
+
+				$this->assertEqual($fixtureData['length'], $schema[$fixtureField]['length'], sprintf('Field "%s" length "%s" in model "%s" does not match "%s"', $fixtureData['length'], $fixtureField, $model, $schema[$fixtureField]['length']));
+				$this->assertEqual($fixtureData['key'], $schema[$fixtureField]['key'], sprintf('Field "%s" key "%s" in model "%s" does not match "%s"', $fixtureData['key'], $fixtureField, $model, $schema[$fixtureField]['key']));
+
+				if($fixtureData['type'] == 'integer'){
+					unset($schema[$fixtureField]);
+					continue;
+				}
+
+				if($fixtureData['type'] == 'datetime'){
+					if($fixtureField == 'created' || $field == 'modified'){
+						$this->assertTrue($schema[$fixtureField]['null'], sprintf('Field "%s" in "%s" should allow being null', $fixtureField, $model));
+						$this->assertFalse($schema[$fixtureField]['default'], sprintf('Field "%s" in "%s" should have an empty default value', $fixtureField, $model));
+					}
+					unset($schema[$fixtureField]);
+					continue;
+				}
+				
+				unset($schema[$fixtureField]);
+			}
+			
+			if(count($schema) > 0){
+				$this->assertFalse(true, sprintf('Live DB has extra fields "%s"', implode(', ', array_keys($schema))));
+			}
 		}
 
 		/**
