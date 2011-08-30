@@ -41,6 +41,8 @@
 		 * @access public
 		 */
 		public $pluginNameCache;
+		
+		private $__availablePlugins = array();
 
 		private function __construct(){}
 
@@ -71,6 +73,10 @@
 		 *
 		 */
 		public function trigger(&$HandlerObject, $eventName, $data = array()){
+			if(empty($this->__availablePlugins) && is_callable(array('ClassRegistry', 'init'))) {
+				$this->__setAvailablePlugins();
+			}
+			
 			if(!is_array($eventName)){
 				$eventName = array($eventName);
 			}
@@ -83,6 +89,11 @@
 			}
 
 			return $return;
+		}
+		
+		private function __setAvailablePlugins() {
+			$this->_Plugin = ClassRegistry::init('Installer.Plugin');
+			$this->__availablePlugins = array_values($this->_Plugin->getInstalledPlugins());
 		}
 
 		/**
