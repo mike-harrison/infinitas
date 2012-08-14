@@ -18,6 +18,7 @@
 			'plugin.libs.item',
 			'plugin.libs.grouped_item',
 			'plugin.libs.multi_grouped_item',
+			'plugin.trash.core_trash'
 		);
 
 		/**
@@ -28,7 +29,7 @@
 		public function setUp() {
 			parent::setUp();
 
-			$this->SingleItem = ClassRegistry::init('SingleItem');
+			$this->SingleItem = ClassRegistry::init('Item');
 			$this->GroupedItem = ClassRegistry::init('GroupedItem');
 			$this->MultiGroupedItem = ClassRegistry::init('MultiGroupedItem');
 
