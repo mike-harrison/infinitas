@@ -1,11 +1,11 @@
 <?php
 	class LockableContent extends CakeTestModel{
 		public $useDbConfig = 'test';
-		public $useTable = 'cms_content';
+		public $useTable = 'cms_contents';
 		public $belongsTo = array();
 		public $hasOne = array();
 		public $actsAs = array(
-			'Libs.Lockable'
+			'Locks.Lockable'
 		);
 	}
 
@@ -16,7 +16,9 @@
 			'plugin.contents.global_category',
 			'plugin.cms.cms_content',
 			'plugin.management.ticket',
-			'plugin.users.group'
+			'plugin.users.group',
+			'plugin.locks.global_lock',
+			'plugin.users.user'
 		);
 
 		function startTest() {

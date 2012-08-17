@@ -179,6 +179,8 @@
 				)
 			);
 
+					// possible alternative:
+					// 'Lock.class = ' . $Model->fullModelName(),
 			$query['joins'][] = array(
 				'table' => 'global_locks',
 				'alias' => 'Lock',
