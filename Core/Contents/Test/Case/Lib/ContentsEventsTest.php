@@ -6,7 +6,10 @@ class ContentsEventsTest extends CakeTestCase {
 		'plugin.themes.theme',
 		'plugin.routes.route',
 		'plugin.view_counter.view_counter_view',
-
+		'plugin.contents.global_tag',
+		'plugin.contents.global_content',
+		'plugin.contents.global_layout',
+		'plugin.contents.global_tagged',
 		'plugin.contents.global_category',
 		'plugin.users.user',
 		'plugin.users.group',
@@ -39,27 +42,27 @@ class ContentsEventsTest extends CakeTestCase {
 			array(
 				'url' => Router::url('/', true) . 'contents/categories',
 				'last_modified' => '2010-08-16 23:56:50',
-				'change_frequency' => 'monthly'
+				'change_frequency' => 'yearly'
 			),
 			array(
 				'url' => Router::url('/', true) . 'contents/categories/view/slug:category-1',
 				'last_modified' => '2010-08-16 23:56:50',
-				'change_frequency' => 'monthly'
+				'change_frequency' => 'yearly'
 			),
 			array(
 				'url' => Router::url('/', true) . 'contents/categories/view/slug:category-2',
 				'last_modified' => '2010-08-16 23:56:50',
-				'change_frequency' => 'monthly'
+				'change_frequency' => 'yearly'
 			),
 			array(
 				'url' => Router::url('/', true) . 'contents/categories/view/slug:category-2a',
 				'last_modified' => '2010-08-16 23:56:50',
-				'change_frequency' => 'monthly'
+				'change_frequency' => 'yearly'
 			),
 			array(
 				'url' => Router::url('/', true) . 'contents/categories/view/slug:category-4',
 				'last_modified' => '2010-08-16 23:56:50',
-				'change_frequency' => 'monthly'
+				'change_frequency' => 'yearly'
 			),
 		)));
 		$this->assertEqual($expected, $result);
