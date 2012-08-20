@@ -100,15 +100,15 @@
 			Configure::write('Security.encryption_secret', '­sç„¢˜4m™¤Àsç');
 			$result = $this->Category->decrypt('Gcav7FmvCHLJZj41u6pQXgAmvm2GKG6O0QPxaqYfRoQ=');
 			$expected = 'hello';
-			$this->assertEquals($expected, $results);
+			$this->assertEquals($expected, $result);
 
 			$result = $this->Category->decrypt('/hIRJvaeVIZo49hudjj04W+KnO+H5R7eNBdXTQ1Fdk4=');
 			$expected = 'tests';
-			$this->assertEquals($expected, $results);
+			$this->assertEquals($expected, $result);
 
 			$result = $this->Category->decrypt('5oeh2eKAeEOYjdCHCJgXPlkBHzam7kKyQTqcZuDnYag=');
 			$expected = '12345';
-			$this->assertEquals($expected, $results);
+			$this->assertEquals($expected, $result);
 
 			Configure::write('Security.encryption_secret', '­sç„¢˜4m™¤ÀšžË');
 			$result = $this->Category->decrypt('Wn0RBbCXOvfC6awXazk4MMtukIR9MdFjMhw748izFHc=');
