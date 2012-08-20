@@ -90,7 +90,7 @@ class TestInfiniTimeHelper extends CakeTestCase {
 		$this->assertFalse($result);
 
 		$result = $this->InfiniTime->fromString('2007-09-10 18:00:00');
-		$expected = strtotime('2007-09-10 18:00:00') + 3600;
+		$expected = strtotime('2007-09-10 18:00:00');
 		$this->assertEqual($result, $expected);
 
 		//Test overwriting the timezone offset
